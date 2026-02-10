@@ -17,9 +17,10 @@
       --btn:#ff6f61;
       --btnText:#ffffff;
       --btn2:#111827;
+      --ok:#16a34a;
+      --bad:#dc2626;
     }
 
-    /* Mobile: verhindert Zoom/Selektion, macht Taps "app-like" */
     html, body{
       height:100%;
       margin:0;
@@ -144,6 +145,34 @@
       color:var(--muted);
     }
 
+    /* Mini-"Kein Bot"-Spiel (Slider) */
+    .sliderWrap{
+      background:var(--soft);
+      border-radius:14px;
+      padding:14px;
+      text-align:left;
+      margin-top:10px;
+    }
+    .sliderTop{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    input[type="range"]{
+      width:100%;
+      height:42px; /* mobile-friendly */
+      margin:0;
+      touch-action:manipulation;
+    }
+    .status{
+      font-weight:700;
+      font-size:14px;
+    }
+    .status.ok{ color:var(--ok); }
+    .status.bad{ color:var(--bad); }
+
     @media (max-width:420px){
       .card{ padding:22px; }
       h1{ font-size:24px; }
@@ -154,8 +183,8 @@
 <body>
   <main class="card" role="main">
 
-    <!-- GAME SCREEN -->
-    <section id="gameScreen" aria-label="Spiel">
+    <!-- GAME 1: Clicker -->
+    <section id="gameScreen" aria-label="Spiel 1">
       <h1>🎮 Erst das Game, dann die Einladung</h1>
       <p class="muted">Ziel: <b><span id="targetLabel">20</span> Taps</b> in <b><span id="durationLabel">10</span> Sekunden</b>.</p>
 
@@ -172,23 +201,24 @@
       <button id="tapBtn" class="btn tap" type="button" disabled>Tap! 👆</button>
 
       <p id="msg" class="muted" aria-live="polite"></p>
-      <p class="muted"><span class="pill">Tipp: am Handy läuft’s ohne Zoom</span></p>
+      <p class="muted"><span class="pill">Mobile: kein Zoom beim Tippen</span></p>
     </section>
 
-    <!-- INVITATION SCREEN -->
+    <!-- INVITATION -->
     <section id="inviteScreen" class="hidden" aria-label="Einladung">
       <h1>🎂 Geburtstagseinladung</h1>
       <p>Ich feiere Geburtstag und du bist eingeladen!</p>
 
       <div class="details" aria-label="Details">
-        <div class="line"><span>📅 Datum</span><b>12. April 2026</b></div>
+        <div class="line"><span>📅 Datum</span><b>14. März 2026</b></div>
         <div class="line"><span>⏰ Uhrzeit</span><b>ab 18:00</b></div>
-        <div class="line"><span>📍 Ort</span><b>Meine Wohnung</b></div>
+        <div class="line"><span>📍 Ort</span><b>Schenkenfelden</b></div>
       </div>
 
       <hr class="divider" />
 
       <div class="row">
+        <!-- Wichtig: kein onclick mehr – wird unten per JS gemacht -->
         <button id="rsvpBtn" class="btn" type="button">Zusage</button>
       </div>
 
@@ -199,6 +229,32 @@
       <p class="muted">Du kannst Datum/Ort/Uhrzeit im HTML ändern.</p>
     </section>
 
+    <!-- GAME 2: "Kein Bot"-Mini-Spiel -->
+    <section id="humanCheckScreen" class="hidden" aria-label="Spiel 2">
+      <h1>🧩 Mini-Check</h1>
+      <p class="muted">Wie auf manchen Webseiten: Zieh den Slider bis ganz rechts, dann wird die Zusage bestätigt.</p>
+
+      <div class="sliderWrap">
+        <div class="sliderTop">
+          <span class="pill">➡️ bis 100 ziehen</span>
+          <span id="humanStatus" class="status bad">Nicht bestätigt</span>
+        </div>
+
+        <input id="humanSlider" type="range" min="0" max="100" value="0" aria-label="Slider bis 100" />
+
+        <p class="muted" style="margin:10px 0 0;">
+          Fortschritt: <b><span id="humanValue">0</span></b>/100
+        </p>
+      </div>
+
+      <div class="row" style="margin-top:16px;">
+        <button id="confirmBtn" class="btn" type="button" disabled>✅ Zusage senden</button>
+        <button id="backBtn" class="btn secondary small" type="button">Zurück</button>
+      </div>
+
+      <p id="humanMsg" class="muted" aria-live="polite"></p>
+    </section>
+
   </main>
 
   <script>
@@ -206,9 +262,15 @@
     const TARGET = 20;
     const DURATION = 10; // seconds
 
+    // Optional: WhatsApp-Link statt Alert (Nummer im internationalen Format ohne +)
+    // Beispiel: const WHATSAPP_NUMBER = "436601234567";
+    const WHATSAPP_NUMBER = ""; // leer lassen -> Alert
+    const WHATSAPP_TEXT = "Hi! Ich bin dabei 😊";
+
     // ===== Elements =====
     const gameScreen = document.getElementById("gameScreen");
     const inviteScreen = document.getElementById("inviteScreen");
+    const humanCheckScreen = document.getElementById("humanCheckScreen");
 
     const timeEl = document.getElementById("time");
     const scoreEl = document.getElementById("score");
@@ -219,6 +281,14 @@
     const tapBtn = document.getElementById("tapBtn");
     const playAgainBtn = document.getElementById("playAgainBtn");
     const rsvpBtn = document.getElementById("rsvpBtn");
+
+    // Human check
+    const humanSlider = document.getElementById("humanSlider");
+    const humanValue = document.getElementById("humanValue");
+    const humanStatus = document.getElementById("humanStatus");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const backBtn = document.getElementById("backBtn");
+    const humanMsg = document.getElementById("humanMsg");
 
     // Labels
     document.getElementById("targetLabel").textContent = String(TARGET);
@@ -254,14 +324,19 @@
       render();
     }
 
-    function showInvitation(){
+    function showOnly(screen){
       gameScreen.classList.add("hidden");
-      inviteScreen.classList.remove("hidden");
+      inviteScreen.classList.add("hidden");
+      humanCheckScreen.classList.add("hidden");
+      screen.classList.remove("hidden");
+    }
+
+    function showInvitation(){
+      showOnly(inviteScreen);
     }
 
     function showGame(){
-      inviteScreen.classList.add("hidden");
-      gameScreen.classList.remove("hidden");
+      showOnly(gameScreen);
       resetGame();
     }
 
@@ -294,11 +369,39 @@
       }, 1000);
     }
 
+    // ===== Game 2 helpers =====
+    function resetHumanCheck(){
+      humanSlider.value = "0";
+      humanValue.textContent = "0";
+      humanStatus.textContent = "Nicht bestätigt";
+      humanStatus.classList.remove("ok");
+      humanStatus.classList.add("bad");
+      confirmBtn.disabled = true;
+      humanMsg.textContent = "";
+    }
+
+    function showHumanCheck(){
+      resetHumanCheck();
+      showOnly(humanCheckScreen);
+    }
+
+    function sendRSVP(){
+      // „Ergebnis“: WhatsApp-Link oder Alert
+      if (WHATSAPP_NUMBER.trim().length > 0){
+        const url = "https://wa.me/" + encodeURIComponent(WHATSAPP_NUMBER.trim())
+          + "?text=" + encodeURIComponent(WHATSAPP_TEXT);
+        window.location.href = url;
+      } else {
+        alert("Bitte sag mir per WhatsApp Bescheid 😊");
+      }
+      humanMsg.textContent = "✅ Danke! (Wenn nichts passiert: WhatsApp-Link oben konfigurieren.)";
+    }
+
     // ===== Events =====
     startBtn.addEventListener("click", startGame);
     resetBtn.addEventListener("click", resetGame);
 
-    // Pointer events verhindern Doppeltipp-Zoom besser als "click"
+    // Pointer events verhindern Doppeltipp-Zoom besser als click
     tapBtn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       if (!running) return;
@@ -306,17 +409,38 @@
       render();
       if (score >= TARGET) endGame();
     });
-
-    // Falls ein Browser trotzdem click auslöst: ignorieren
     tapBtn.addEventListener("click", (e) => e.preventDefault());
 
     playAgainBtn.addEventListener("click", showGame);
 
-    rsvpBtn.addEventListener("click", () => {
-      alert("Bitte sag mir per WhatsApp Bescheid 😊");
+    // Zusage -> erst Mini-"Kein Bot"-Spiel öffnen
+    rsvpBtn.addEventListener("click", showHumanCheck);
+
+    // Slider-Logik
+    humanSlider.addEventListener("input", () => {
+      const v = Number(humanSlider.value);
+      humanValue.textContent = String(v);
+
+      if (v >= 100){
+        humanStatus.textContent = "Bestätigt";
+        humanStatus.classList.remove("bad");
+        humanStatus.classList.add("ok");
+        confirmBtn.disabled = false;
+        humanMsg.textContent = "✅ Passt. Du kannst jetzt bestätigen.";
+      } else {
+        humanStatus.textContent = "Nicht bestätigt";
+        humanStatus.classList.remove("ok");
+        humanStatus.classList.add("bad");
+        confirmBtn.disabled = true;
+        humanMsg.textContent = "";
+      }
     });
 
+    confirmBtn.addEventListener("click", sendRSVP);
+    backBtn.addEventListener("click", () => showOnly(inviteScreen));
+
     // Init
+    showOnly(gameScreen);
     render();
   </script>
 </body>
