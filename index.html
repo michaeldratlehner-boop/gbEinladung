@@ -6,19 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
     :root{
-      --bg1:#ffe29f;
-      --bg2:#ffa99f;
-      --card:#ffffff;
-      --text:#1f2937;
-      --muted:#6b7280;
-      --soft:#f3f4f6;
-      --shadow:0 14px 40px rgba(0,0,0,.14);
-      --radius:18px;
-      --btn:#ff6f61;
-      --btnText:#ffffff;
-      --btn2:#111827;
-      --ok:#16a34a;
-      --bad:#dc2626;
+      --bg1:#ffe29f; --bg2:#ffa99f; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+      --soft:#f3f4f6; --shadow:0 14px 40px rgba(0,0,0,.14); --radius:18px;
+      --btn:#ff6f61; --btnText:#ffffff; --btn2:#111827; --ok:#16a34a; --bad:#dc2626;
+      --line:#ececec;
     }
 
     html, body{
@@ -58,7 +49,7 @@
 
     .divider{
       border:none;
-      border-top:1px solid #ececec;
+      border-top:1px solid var(--line);
       margin:18px 0;
     }
 
@@ -90,30 +81,19 @@
       width:100%;
       touch-action:manipulation;
     }
-
     .btn.secondary{
       background:#fff;
       color:var(--btn2);
       border:1px solid #e5e7eb;
     }
-
     .btn.small{
       width:auto;
       padding:12px 14px;
       font-size:15px;
     }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
 
-    .btn:disabled{
-      opacity:.55;
-      cursor:not-allowed;
-    }
-
-    .tap{
-      margin-top:12px;
-      font-size:18px;
-      padding:18px 16px;
-    }
-
+    .tap{ margin-top:12px; font-size:18px; padding:18px 16px; }
     .hidden{ display:none; }
 
     .details{
@@ -123,7 +103,6 @@
       border-radius:14px;
       padding:14px 14px;
     }
-
     .details .line{
       display:flex;
       justify-content:space-between;
@@ -144,38 +123,59 @@
       color:var(--muted);
     }
 
-    /* Mini-"Kein Bot"-Spiel (Slider) */
-    .sliderWrap{
+    /* ===== Memory ===== */
+    .memoryWrap{
       background:var(--soft);
       border-radius:14px;
       padding:14px;
       text-align:left;
       margin-top:10px;
     }
-    .sliderTop{
+    .memoryTop{
       display:flex;
       justify-content:space-between;
       align-items:center;
       gap:10px;
-      margin-bottom:10px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
     }
-    input[type="range"]{
-      width:100%;
-      height:42px;
-      margin:0;
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:10px;
+    }
+    .mcard{
+      position:relative;
+      height:64px;
+      border-radius:14px;
+      border:1px solid #e5e7eb;
+      background:#fff;
+      cursor:pointer;
       touch-action:manipulation;
-    }
-    .status{
+      display:grid;
+      place-items:center;
+      font-size:28px;
       font-weight:700;
-      font-size:14px;
+      overflow:hidden;
     }
-    .status.ok{ color:var(--ok); }
-    .status.bad{ color:var(--bad); }
-
+    .mcard:disabled{ cursor:not-allowed; }
+    .mcard .front{ display:none; }
+    .mcard.flipped .front{ display:block; }
+    .mcard.flipped .back{ display:none; }
+    .mcard .back{
+      font-size:16px;
+      color:var(--muted);
+    }
+    .mcard.matched{
+      border-color:rgba(22,163,74,.35);
+      background:rgba(22,163,74,.08);
+      cursor:default;
+    }
     @media (max-width:420px){
       .card{ padding:22px; }
       h1{ font-size:24px; }
       .stat{ min-width:120px; }
+      .mcard{ height:58px; font-size:26px; }
     }
   </style>
 </head>
@@ -225,45 +225,41 @@
       </div>
     </section>
 
-    <!-- GAME 2: "Kein Bot"-Mini-Spiel -->
-    <section id="humanCheckScreen" class="hidden" aria-label="Spiel 2">
-      <h1>🧩 Mini-Check</h1>
-      <p class="muted">Wie auf manchen Webseiten: Zieh den Slider bis ganz rechts, dann wird die Zusage bestätigt.</p>
+    <!-- GAME 2: Memory -->
+    <section id="memoryScreen" class="hidden" aria-label="Memory">
+      <h1>🧠 Memory-Check</h1>
+      <p class="muted">Finde alle Paare, dann geht’s automatisch zu WhatsApp mit den Infos.</p>
 
-      <div class="sliderWrap">
-        <div class="sliderTop">
-          <span class="pill">➡️ bis 100 ziehen</span>
-          <span id="humanStatus" class="status bad">Nicht bestätigt</span>
+      <div class="memoryWrap">
+        <div class="memoryTop">
+          <span class="pill">4 Paare finden</span>
+          <span class="pill">Züge: <b id="moves">0</b></span>
+          <span id="memStatus" class="pill">Noch nicht geschafft</span>
         </div>
 
-        <input id="humanSlider" type="range" min="0" max="100" value="0" aria-label="Slider bis 100" />
-
-        <p class="muted" style="margin:10px 0 0;">
-          Fortschritt: <b><span id="humanValue">0</span></b>/100
-        </p>
+        <div id="grid" class="grid" aria-label="Memory Feld"></div>
       </div>
 
       <div class="row" style="margin-top:16px;">
-        <button id="confirmBtn" class="btn" type="button" disabled>✅ Zusage senden</button>
-        <button id="backBtn" class="btn secondary small" type="button">Zurück</button>
+        <button id="memRestartBtn" class="btn secondary small" type="button">Neu mischen</button>
+        <button id="memBackBtn" class="btn secondary small" type="button">Zurück</button>
       </div>
 
-      <p id="humanMsg" class="muted" aria-live="polite"></p>
+      <p id="memMsg" class="muted" aria-live="polite"></p>
     </section>
 
   </main>
 
   <script>
-    // ===== Settings (Spiel) =====
+    // ===== Settings (Spiel 1) =====
     const TARGET = 20;
-    const DURATION = 10; // seconds
+    const DURATION = 10;
 
     // ===== WhatsApp =====
-    // Nummer im internationalen Format OHNE +, OHNE Leerzeichen
-    // Für AT z.B. 4366..., NICHT 43066...
+    // Nummer international OHNE +, OHNE Leerzeichen, OHNE führende 0 nach 43
     const WHATSAPP_NUMBER = "4368184496409";
 
-    // ===== Inhalte für WhatsApp-Nachricht =====
+    // ===== WhatsApp-Inhalt =====
     const EVENT_TITLE = "30er Geburtstag 🎉";
     const EVENT_DATE = "14. März 2026";
     const EVENT_TIME = "ab 18:00";
@@ -281,10 +277,21 @@
       );
     }
 
+    function sendToWhatsApp(){
+      const text = buildWhatsAppText();
+      if (WHATSAPP_NUMBER.trim().length === 0){
+        alert(text);
+        return;
+      }
+      const url = "https://wa.me/" + encodeURIComponent(WHATSAPP_NUMBER.trim())
+        + "?text=" + encodeURIComponent(text);
+      window.location.href = url;
+    }
+
     // ===== Elements =====
     const gameScreen = document.getElementById("gameScreen");
     const inviteScreen = document.getElementById("inviteScreen");
-    const humanCheckScreen = document.getElementById("humanCheckScreen");
+    const memoryScreen = document.getElementById("memoryScreen");
 
     const timeEl = document.getElementById("time");
     const scoreEl = document.getElementById("score");
@@ -296,26 +303,33 @@
     const playAgainBtn = document.getElementById("playAgainBtn");
     const rsvpBtn = document.getElementById("rsvpBtn");
 
-    // Human check
-    const humanSlider = document.getElementById("humanSlider");
-    const humanValue = document.getElementById("humanValue");
-    const humanStatus = document.getElementById("humanStatus");
-    const confirmBtn = document.getElementById("confirmBtn");
-    const backBtn = document.getElementById("backBtn");
-    const humanMsg = document.getElementById("humanMsg");
+    // Memory elements
+    const gridEl = document.getElementById("grid");
+    const movesEl = document.getElementById("moves");
+    const memStatusEl = document.getElementById("memStatus");
+    const memMsgEl = document.getElementById("memMsg");
+    const memRestartBtn = document.getElementById("memRestartBtn");
+    const memBackBtn = document.getElementById("memBackBtn");
 
     // Labels
     document.getElementById("targetLabel").textContent = String(TARGET);
     document.getElementById("targetInline").textContent = String(TARGET);
     document.getElementById("durationLabel").textContent = String(DURATION);
 
-    // ===== State =====
+    function showOnly(screen){
+      gameScreen.classList.add("hidden");
+      inviteScreen.classList.add("hidden");
+      memoryScreen.classList.add("hidden");
+      screen.classList.remove("hidden");
+    }
+
+    // ===== Game 1 State =====
     let timeLeft = DURATION;
     let score = 0;
     let running = false;
     let timerId = null;
 
-    function render(){
+    function renderGame1(){
       timeEl.textContent = String(timeLeft);
       scoreEl.textContent = String(score);
     }
@@ -327,7 +341,7 @@
       }
     }
 
-    function resetGame(){
+    function resetGame1(){
       stopTimer();
       timeLeft = DURATION;
       score = 0;
@@ -335,14 +349,7 @@
       msgEl.textContent = "";
       startBtn.disabled = false;
       tapBtn.disabled = true;
-      render();
-    }
-
-    function showOnly(screen){
-      gameScreen.classList.add("hidden");
-      inviteScreen.classList.add("hidden");
-      humanCheckScreen.classList.add("hidden");
-      screen.classList.remove("hidden");
+      renderGame1();
     }
 
     function showInvitation(){
@@ -351,10 +358,10 @@
 
     function showGame(){
       showOnly(gameScreen);
-      resetGame();
+      resetGame1();
     }
 
-    function endGame(){
+    function endGame1(){
       running = false;
       stopTimer();
       tapBtn.disabled = true;
@@ -368,97 +375,161 @@
       }
     }
 
-    function startGame(){
-      resetGame();
+    function startGame1(){
+      resetGame1();
       running = true;
       startBtn.disabled = true;
       tapBtn.disabled = false;
       msgEl.textContent = `Los! ${TARGET} Taps in ${DURATION}s.`;
-      render();
+      renderGame1();
 
       timerId = setInterval(() => {
         timeLeft -= 1;
-        render();
-        if (timeLeft <= 0) endGame();
+        renderGame1();
+        if (timeLeft <= 0) endGame1();
       }, 1000);
     }
 
-    // ===== Game 2 helpers =====
-    function resetHumanCheck(){
-      humanSlider.value = "0";
-      humanValue.textContent = "0";
-      humanStatus.textContent = "Nicht bestätigt";
-      humanStatus.classList.remove("ok");
-      humanStatus.classList.add("bad");
-      confirmBtn.disabled = true;
-      humanMsg.textContent = "";
-    }
+    startBtn.addEventListener("click", startGame1);
+    resetBtn.addEventListener("click", resetGame1);
 
-    function showHumanCheck(){
-      resetHumanCheck();
-      showOnly(humanCheckScreen);
-    }
-
-    function sendToWhatsApp(){
-      const text = buildWhatsAppText();
-
-      if (WHATSAPP_NUMBER.trim().length === 0){
-        alert(text);
-        humanMsg.textContent = "⚠️ Keine WhatsApp-Nummer gesetzt. Text wurde angezeigt.";
-        return;
-      }
-
-      const url = "https://wa.me/" + encodeURIComponent(WHATSAPP_NUMBER.trim())
-        + "?text=" + encodeURIComponent(text);
-
-      window.location.href = url;
-    }
-
-    // ===== Events =====
-    startBtn.addEventListener("click", startGame);
-    resetBtn.addEventListener("click", resetGame);
-
-    // Pointer events verhindern Doppeltipp-Zoom besser als click
     tapBtn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       if (!running) return;
       score += 1;
-      render();
-      if (score >= TARGET) endGame();
+      renderGame1();
+      if (score >= TARGET) endGame1();
     });
     tapBtn.addEventListener("click", (e) => e.preventDefault());
 
     playAgainBtn.addEventListener("click", showGame);
 
-    // Zusage -> erst Mini-"Kein Bot"-Spiel öffnen
-    rsvpBtn.addEventListener("click", showHumanCheck);
+    // ===== Memory =====
+    const PAIRS = ["🎈","🎁","🍕","🥳"]; // 4 Paare
+    let deck = [];
+    let first = null;
+    let second = null;
+    let lock = false;
+    let matched = 0;
+    let moves = 0;
 
-    // Slider-Logik
-    humanSlider.addEventListener("input", () => {
-      const v = Number(humanSlider.value);
-      humanValue.textContent = String(v);
-
-      if (v >= 100){
-        humanStatus.textContent = "Bestätigt";
-        humanStatus.classList.remove("bad");
-        humanStatus.classList.add("ok");
-        confirmBtn.disabled = false;
-        humanMsg.textContent = "✅ Passt. Du kannst jetzt bestätigen.";
-      } else {
-        humanStatus.textContent = "Nicht bestätigt";
-        humanStatus.classList.remove("ok");
-        humanStatus.classList.add("bad");
-        confirmBtn.disabled = true;
-        humanMsg.textContent = "";
+    function shuffle(arr){
+      for (let i = arr.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
       }
-    });
+      return arr;
+    }
 
-    confirmBtn.addEventListener("click", sendToWhatsApp);
-    backBtn.addEventListener("click", () => showOnly(inviteScreen));
+    function resetMemory(){
+      deck = shuffle([...PAIRS, ...PAIRS].map((v, idx) => ({ id: idx + "-" + v, v })));
+      first = null;
+      second = null;
+      lock = false;
+      matched = 0;
+      moves = 0;
+      movesEl.textContent = "0";
+      memStatusEl.textContent = "Noch nicht geschafft";
+      memMsgEl.textContent = "Tipp: erst merken, dann matchen 😉";
+      renderMemory();
+    }
+
+    function renderMemory(){
+      gridEl.innerHTML = "";
+      for (const card of deck){
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "mcard";
+        btn.dataset.id = card.id;
+        btn.dataset.value = card.v;
+
+        btn.innerHTML = `
+          <span class="front">${card.v}</span>
+          <span class="back">?</span>
+        `;
+
+        btn.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          onPick(btn);
+        });
+        btn.addEventListener("click", (e) => e.preventDefault());
+
+        gridEl.appendChild(btn);
+      }
+    }
+
+    function flip(btn, on){
+      if (on) btn.classList.add("flipped");
+      else btn.classList.remove("flipped");
+    }
+
+    function markMatched(btn){
+      btn.classList.add("matched");
+      btn.disabled = true;
+    }
+
+    function onPick(btn){
+      if (lock) return;
+      if (btn.classList.contains("matched")) return;
+      if (btn === first) return;
+
+      flip(btn, true);
+
+      if (first === null){
+        first = btn;
+        return;
+      }
+
+      second = btn;
+      moves += 1;
+      movesEl.textContent = String(moves);
+
+      const a = first.dataset.value;
+      const b = second.dataset.value;
+
+      if (a === b){
+        markMatched(first);
+        markMatched(second);
+        matched += 1;
+        first = null;
+        second = null;
+
+        if (matched === PAIRS.length){
+          memStatusEl.textContent = "✅ Geschafft";
+          memMsgEl.textContent = "Super! Weiterleitung zu WhatsApp…";
+          setTimeout(sendToWhatsApp, 650);
+        } else {
+          memMsgEl.textContent = "✅ Match!";
+        }
+        return;
+      }
+
+      // kein Match
+      lock = true;
+      memMsgEl.textContent = "❌ Kein Match";
+      setTimeout(() => {
+        flip(first, false);
+        flip(second, false);
+        first = null;
+        second = null;
+        lock = false;
+      }, 650);
+    }
+
+    function showMemory(){
+      resetMemory();
+      showOnly(memoryScreen);
+    }
+
+    // RSVP -> Memory starten
+    rsvpBtn.addEventListener("click", showMemory);
+
+    memRestartBtn.addEventListener("click", resetMemory);
+    memBackBtn.addEventListener("click", showInvitation);
 
     // Init
     showOnly(gameScreen);
-    render();
+    renderGame1();
   </script>
 </body>
 </html>
