@@ -80,6 +80,11 @@
       color:var(--btnText);
       width:100%;
       touch-action:manipulation;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-sizing:border-box;
     }
     .btn.secondary{
       background:#fff;
@@ -162,20 +167,30 @@
     .mcard .front{ display:none; }
     .mcard.flipped .front{ display:block; }
     .mcard.flipped .back{ display:none; }
-    .mcard .back{
-      font-size:16px;
-      color:var(--muted);
-    }
+    .mcard .back{ font-size:16px; color:var(--muted); }
     .mcard.matched{
       border-color:rgba(22,163,74,.35);
       background:rgba(22,163,74,.08);
       cursor:default;
     }
+
+    /* ===== Group Screen ===== */
+    .qr{
+      max-width:220px;
+      width:70%;
+      height:auto;
+      border-radius:16px;
+      margin-top:10px;
+      box-shadow:0 10px 24px rgba(0,0,0,.10);
+      background:#fff;
+    }
+
     @media (max-width:420px){
       .card{ padding:22px; }
       h1{ font-size:24px; }
       .stat{ min-width:120px; }
       .mcard{ height:58px; font-size:26px; }
+      .qr{ width:78%; }
     }
   </style>
 </head>
@@ -228,7 +243,7 @@
     <!-- GAME 2: Memory -->
     <section id="memoryScreen" class="hidden" aria-label="Memory">
       <h1>🧠 Memory-Check</h1>
-      <p class="muted">Finde alle Paare, dann geht’s automatisch zu WhatsApp mit den Infos.</p>
+      <p class="muted">Finde alle Paare, dann bekommst du WhatsApp + Gruppenlink.</p>
 
       <div class="memoryWrap">
         <div class="memoryTop">
@@ -248,6 +263,30 @@
       <p id="memMsg" class="muted" aria-live="polite"></p>
     </section>
 
+    <!-- GROUP JOIN -->
+    <section id="groupScreen" class="hidden" aria-label="WhatsApp Gruppe">
+      <h1>💬 WhatsApp-Gruppe</h1>
+      <p class="muted">Tritt der Gruppe bei – dort stehen alle Infos & Updates.</p>
+
+      <div class="row" style="margin-top:18px;">
+        <a id="groupBtn" class="btn" href="#" target="_blank" rel="noopener">
+          👉 Zur WhatsApp-Gruppe
+        </a>
+      </div>
+
+      <p class="muted" style="margin-top:14px;">Oder QR-Code scannen:</p>
+
+      <!-- Lege dein QR-Bild als group-qr.png neben die index.html -->
+      <img class="qr" src="group-qr.png" alt="WhatsApp Gruppen QR">
+
+      <div class="row" style="margin-top:16px;">
+        <button id="sendInfoBtn" class="btn secondary small" type="button">📩 Infos an WhatsApp senden</button>
+        <button id="groupBackBtn" class="btn secondary small" type="button">Zurück</button>
+      </div>
+
+      <p id="groupMsg" class="muted" aria-live="polite"></p>
+    </section>
+
   </main>
 
   <script>
@@ -255,16 +294,19 @@
     const TARGET = 20;
     const DURATION = 10;
 
-    // ===== WhatsApp =====
+    // ===== WhatsApp (Privat an dich) =====
     // Nummer international OHNE +, OHNE Leerzeichen, OHNE führende 0 nach 43
     const WHATSAPP_NUMBER = "4368184496409";
 
-    // ===== WhatsApp-Inhalt =====
+    // ===== Inhalte =====
     const EVENT_TITLE = "30er Geburtstag 🎉";
     const EVENT_DATE = "14. März 2026";
     const EVENT_TIME = "ab 18:00";
     const EVENT_LOCATION = "Schenkenfelden";
     const EXTRA_INFO = "Bitte kurz Bescheid geben, ob du kommst 😊";
+
+    // Gruppenlink hier rein (statt DEIN_CODE_HIER)
+    const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/C9BeSFQuH6F3p2ye3TWFdY";
 
     function buildWhatsAppText(){
       return (
@@ -273,18 +315,22 @@
         "📅 " + EVENT_DATE + "\n" +
         "⏰ " + EVENT_TIME + "\n" +
         "📍 " + EVENT_LOCATION + "\n\n" +
-        EXTRA_INFO
+        EXTRA_INFO + "\n\n" +
+        "💬 Gruppe (Infos): " + WHATSAPP_GROUP_LINK
       );
     }
 
     function sendToWhatsApp(){
       const text = buildWhatsAppText();
+
       if (WHATSAPP_NUMBER.trim().length === 0){
         alert(text);
         return;
       }
+
       const url = "https://wa.me/" + encodeURIComponent(WHATSAPP_NUMBER.trim())
         + "?text=" + encodeURIComponent(text);
+
       window.location.href = url;
     }
 
@@ -292,6 +338,7 @@
     const gameScreen = document.getElementById("gameScreen");
     const inviteScreen = document.getElementById("inviteScreen");
     const memoryScreen = document.getElementById("memoryScreen");
+    const groupScreen = document.getElementById("groupScreen");
 
     const timeEl = document.getElementById("time");
     const scoreEl = document.getElementById("score");
@@ -311,6 +358,12 @@
     const memRestartBtn = document.getElementById("memRestartBtn");
     const memBackBtn = document.getElementById("memBackBtn");
 
+    // Group elements
+    const groupBtn = document.getElementById("groupBtn");
+    const sendInfoBtn = document.getElementById("sendInfoBtn");
+    const groupBackBtn = document.getElementById("groupBackBtn");
+    const groupMsg = document.getElementById("groupMsg");
+
     // Labels
     document.getElementById("targetLabel").textContent = String(TARGET);
     document.getElementById("targetInline").textContent = String(TARGET);
@@ -320,6 +373,7 @@
       gameScreen.classList.add("hidden");
       inviteScreen.classList.add("hidden");
       memoryScreen.classList.add("hidden");
+      groupScreen.classList.add("hidden");
       screen.classList.remove("hidden");
     }
 
@@ -359,6 +413,12 @@
     function showGame(){
       showOnly(gameScreen);
       resetGame1();
+    }
+
+    function showGroup(){
+      showOnly(groupScreen);
+      groupBtn.href = WHATSAPP_GROUP_LINK;
+      groupMsg.textContent = "✅ Fast fertig: Gruppe beitreten und/oder Infos an WhatsApp senden.";
     }
 
     function endGame1(){
@@ -403,6 +463,12 @@
     tapBtn.addEventListener("click", (e) => e.preventDefault());
 
     playAgainBtn.addEventListener("click", showGame);
+
+    // RSVP -> Memory starten
+    rsvpBtn.addEventListener("click", () => {
+      resetMemory();
+      showOnly(memoryScreen);
+    });
 
     // ===== Memory =====
     const PAIRS = ["🎈","🎁","🍕","🥳"]; // 4 Paare
@@ -496,15 +562,14 @@
 
         if (matched === PAIRS.length){
           memStatusEl.textContent = "✅ Geschafft";
-          memMsgEl.textContent = "Super! Weiterleitung zu WhatsApp…";
-          setTimeout(sendToWhatsApp, 650);
+          memMsgEl.textContent = "Super! Jetzt zur Gruppe / WhatsApp…";
+          setTimeout(showGroup, 650);
         } else {
           memMsgEl.textContent = "✅ Match!";
         }
         return;
       }
 
-      // kein Match
       lock = true;
       memMsgEl.textContent = "❌ Kein Match";
       setTimeout(() => {
@@ -516,16 +581,12 @@
       }, 650);
     }
 
-    function showMemory(){
-      resetMemory();
-      showOnly(memoryScreen);
-    }
-
-    // RSVP -> Memory starten
-    rsvpBtn.addEventListener("click", showMemory);
-
     memRestartBtn.addEventListener("click", resetMemory);
     memBackBtn.addEventListener("click", showInvitation);
+
+    // Group actions
+    sendInfoBtn.addEventListener("click", sendToWhatsApp);
+    groupBackBtn.addEventListener("click", showInvitation);
 
     // Init
     showOnly(gameScreen);
