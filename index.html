@@ -279,11 +279,6 @@
       <!-- Lege dein QR-Bild als group-qr.png neben die index.html -->
       <img class="qr" src="group-qr.png" alt="WhatsApp Gruppen QR">
 
-      <div class="row" style="margin-top:16px;">
-        <button id="sendInfoBtn" class="btn secondary small" type="button">📩 Infos an WhatsApp senden</button>
-        <button id="groupBackBtn" class="btn secondary small" type="button">Zurück</button>
-      </div>
-
       <p id="groupMsg" class="muted" aria-live="polite"></p>
     </section>
 
@@ -418,7 +413,7 @@
     function showGroup(){
       showOnly(groupScreen);
       groupBtn.href = WHATSAPP_GROUP_LINK;
-      groupMsg.textContent = "✅ Fast fertig: Gruppe beitreten und/oder Infos an WhatsApp senden.";
+      groupMsg.textContent = "✅ Fast fertig: Gruppe beitreten für mehr Infos.";
     }
 
     function endGame1(){
