@@ -12,12 +12,14 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      margin: 0;
+      padding: 20px;
     }
     .card {
       background: white;
       padding: 32px;
       border-radius: 16px;
-      max-width: 420px;
+      width: min(520px, 92vw);
       text-align: center;
       box-shadow: 0 10px 30px rgba(0,0,0,.15);
     }
@@ -33,22 +35,178 @@
       font-size: 16px;
       cursor: pointer;
     }
+    button.secondary {
+      background: #f2f2f2;
+      color: #222;
+      border: 1px solid #ddd;
+    }
+    button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 12px 0 0;
+    }
+    .stat {
+      padding: 10px 12px;
+      background: #f2f2f2;
+      border-radius: 12px;
+      min-width: 120px;
+    }
+    .hint { color: #666; font-size: 14px; margin-top: 8px; }
+    .hidden { display: none; }
+    hr { border: none; border-top: 1px solid #eee; margin: 18px 0; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>🎂 Geburtstagseinladung</h1>
-    <p>Ich feiere Geburtstag und du bist eingeladen!</p>
 
-    <div class="details">
-      <p><strong>📅 Datum:</strong> 12. April 2026</p>
-      <p><strong>⏰ Uhrzeit:</strong> ab 18:00</p>
-      <p><strong>📍 Ort:</strong> Meine Wohnung</p>
+    <!-- GAME SCREEN -->
+    <div id="gameScreen">
+      <h1>🎮 Erst das Game, dann die Einladung</h1>
+      <p>Schaffst du <b>20 Klicks</b> in <b>10 Sekunden</b>?</p>
+
+      <div class="row">
+        <div class="stat">⏱️ Zeit: <b id="time">10</b>s</div>
+        <div class="stat">⭐ Klicks: <b id="score">0</b>/20</div>
+      </div>
+
+      <div class="row" style="margin-top:16px;">
+        <button id="startBtn">Start</button>
+        <button id="tapBtn" disabled>Klick!</button>
+      </div>
+
+      <p id="msg" class="hint"></p>
     </div>
 
-    <button onclick="alert('Bitte sag mir per WhatsApp Bescheid 😊')">
-      Zusage
-    </button>
+    <!-- INVITATION SCREEN (LOCKED UNTIL WIN) -->
+    <div id="inviteScreen" class="hidden">
+      <h1>🎂 Geburtstagseinladung</h1>
+      <p>Ich feiere Geburtstag und du bist eingeladen!</p>
+
+      <div class="details">
+        <p><strong>📅 Datum:</strong> 12. April 2026</p>
+        <p><strong>⏰ Uhrzeit:</strong> ab 18:00</p>
+        <p><strong>📍 Ort:</strong> Meine Wohnung</p>
+      </div>
+
+      <button onclick="alert('Bitte sag mir per WhatsApp Bescheid 😊')">
+        Zusage
+      </button>
+
+      <div class="row" style="margin-top:14px;">
+        <button id="playAgainBtn" class="secondary">Nochmal spielen</button>
+      </div>
+      <p class="hint">Tipp: Du kannst Datum/Ort/Uhrzeit im HTML einfach anpassen.</p>
+    </div>
+
   </div>
+
+  <script>
+    // Game settings
+    const TARGET = 20;
+    const DURATION = 10; // seconds
+
+    // Elements
+    const gameScreen = document.getElementById("gameScreen");
+    const inviteScreen = document.getElementById("inviteScreen");
+    const timeEl = document.getElementById("time");
+    const scoreEl = document.getElementById("score");
+    const msgEl = document.getElementById("msg");
+    const startBtn = document.getElementById("startBtn");
+    const tapBtn = document.getElementById("tapBtn");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+
+    // State
+    let timeLeft = DURATION;
+    let score = 0;
+    let running = false;
+    let timerId = null;
+
+    function render() {
+      timeEl.textContent = String(timeLeft);
+      scoreEl.textContent = String(score);
+    }
+
+    function resetGameUI() {
+      timeLeft = DURATION;
+      score = 0;
+      running = false;
+      msgEl.textContent = "";
+      tapBtn.disabled = true;
+      startBtn.disabled = false;
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+      render();
+    }
+
+    function showInvitation() {
+      gameScreen.classList.add("hidden");
+      inviteScreen.classList.remove("hidden");
+    }
+
+    function showGame() {
+      inviteScreen.classList.add("hidden");
+      gameScreen.classList.remove("hidden");
+      resetGameUI();
+    }
+
+    function endGame() {
+      running = false;
+      tapBtn.disabled = true;
+      startBtn.disabled = false;
+
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+
+      if (score >= TARGET) {
+        msgEl.textContent = `✅ Geschafft! (${score}/${TARGET}) — Einladung wird freigeschaltet…`;
+        // small delay for nicer feel
+        setTimeout(showInvitation, 700);
+      } else {
+        msgEl.textContent = `❌ Leider nicht. (${score}/${TARGET}) — nochmal!`;
+      }
+    }
+
+    startBtn.addEventListener("click", () => {
+      if (running) return;
+      resetGameUI();
+
+      running = true;
+      startBtn.disabled = true;
+      tapBtn.disabled = false;
+      msgEl.textContent = `Los! Ziel: ${TARGET} Klicks in ${DURATION}s`;
+      render();
+
+      timerId = setInterval(() => {
+        timeLeft -= 1;
+        render();
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    });
+
+    tapBtn.addEventListener("click", () => {
+      if (!running) return;
+      score += 1;
+      render();
+      if (score >= TARGET) {
+        // early win
+        endGame();
+      }
+    });
+
+    playAgainBtn.addEventListener("click", showGame);
+
+    // init
+    render();
+  </script>
 </body>
 </html>
