@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>🎉 Geburtstagseinladung</title>
+  <title>🎉 30er Geburtstagseinladung</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
     :root{
@@ -53,7 +53,6 @@
     }
 
     h1{ margin:0 0 10px; font-size:28px; }
-    h2{ margin:0 0 10px; font-size:20px; }
     p{ margin:10px 0; line-height:1.45; }
     .muted{ color:var(--muted); font-size:14px; }
 
@@ -162,7 +161,7 @@
     }
     input[type="range"]{
       width:100%;
-      height:42px; /* mobile-friendly */
+      height:42px;
       margin:0;
       touch-action:manipulation;
     }
@@ -218,7 +217,6 @@
       <hr class="divider" />
 
       <div class="row">
-        <!-- Wichtig: kein onclick mehr – wird unten per JS gemacht -->
         <button id="rsvpBtn" class="btn" type="button">Zusage</button>
       </div>
 
@@ -256,15 +254,32 @@
   </main>
 
   <script>
-    
-    // ===== Settings =====
+    // ===== Settings (Spiel) =====
     const TARGET = 20;
     const DURATION = 10; // seconds
 
-    // Optional: WhatsApp-Link statt Alert (Nummer im internationalen Format ohne +)
-    // Beispiel: const WHATSAPP_NUMBER = "436601234567";
-    const WHATSAPP_NUMBER = "43068184496409"; // leer lassen -> Alert
-    const WHATSAPP_TEXT = "Hi! Ich bin bei deiner Geburtstagsparty dabei 🎉";
+    // ===== WhatsApp =====
+    // Nummer im internationalen Format OHNE +, OHNE Leerzeichen
+    // Für AT z.B. 4366..., NICHT 43066...
+    const WHATSAPP_NUMBER = "4368184496409";
+
+    // ===== Inhalte für WhatsApp-Nachricht =====
+    const EVENT_TITLE = "30er Geburtstag 🎉";
+    const EVENT_DATE = "14. März 2026";
+    const EVENT_TIME = "ab 18:00";
+    const EVENT_LOCATION = "Schenkenfelden";
+    const EXTRA_INFO = "Bitte kurz Bescheid geben, ob du kommst 😊";
+
+    function buildWhatsAppText(){
+      return (
+        "Hi! Ich bin dabei 🎉\n\n" +
+        "🎂 " + EVENT_TITLE + "\n" +
+        "📅 " + EVENT_DATE + "\n" +
+        "⏰ " + EVENT_TIME + "\n" +
+        "📍 " + EVENT_LOCATION + "\n\n" +
+        EXTRA_INFO
+      );
+    }
 
     // ===== Elements =====
     const gameScreen = document.getElementById("gameScreen");
@@ -384,16 +399,19 @@
       showOnly(humanCheckScreen);
     }
 
-    function sendRSVP(){
-      // „Ergebnis“: WhatsApp-Link oder Alert
-      if (WHATSAPP_NUMBER.trim().length > 0){
-        const url = "https://wa.me/" + encodeURIComponent(WHATSAPP_NUMBER.trim())
-          + "?text=" + encodeURIComponent(WHATSAPP_TEXT);
-        window.location.href = url;
-      } else {
-        alert("Bitte sag mir per WhatsApp Bescheid 😊");
+    function sendToWhatsApp(){
+      const text = buildWhatsAppText();
+
+      if (WHATSAPP_NUMBER.trim().length === 0){
+        alert(text);
+        humanMsg.textContent = "⚠️ Keine WhatsApp-Nummer gesetzt. Text wurde angezeigt.";
+        return;
       }
-      humanMsg.textContent = "✅ Danke! ";
+
+      const url = "https://wa.me/" + encodeURIComponent(WHATSAPP_NUMBER.trim())
+        + "?text=" + encodeURIComponent(text);
+
+      window.location.href = url;
     }
 
     // ===== Events =====
@@ -435,7 +453,7 @@
       }
     });
 
-    confirmBtn.addEventListener("click", sendRSVP);
+    confirmBtn.addEventListener("click", sendToWhatsApp);
     backBtn.addEventListener("click", () => showOnly(inviteScreen));
 
     // Init
